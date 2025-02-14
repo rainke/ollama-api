@@ -1,0 +1,36 @@
+package main
+
+import (
+	"net/http"
+	"os"
+	"time"
+)
+
+func main() {
+	http.HandleFunc("/api/v1/openai/models", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"data": [{"llm": {"model": "deepseek"}, "name": "r1"}]}`))
+	})
+	http.HandleFunc("/api/v1/openai/chat/completions", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		file, _ := os.OpenFile("./local.txt", os.O_RDONLY, 0666)
+		defer file.Close()
+		for {
+			buf := make([]byte, 64)
+			n, err := file.Read(buf)
+			if err != nil {
+				break
+			}
+			time.Sleep(10 * time.Millisecond)
+			w.Write(buf[:n])
+		}
+	})
+	http.ListenAndServe(":3001", nil)
+}
